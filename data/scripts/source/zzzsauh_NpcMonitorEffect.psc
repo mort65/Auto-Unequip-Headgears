@@ -270,7 +270,7 @@ Bool Function bIsArmor(Form akBaseObject)
 EndFunction
 
 Bool Function bIsHeadgear(Form akBaseObject)
-	If akBaseObject.HasKeyWord(ArmorHelmet) || (akBaseObject.HasKeyWord(ClothingHead) && !sauhClothingExclusion.GetValue())
+	If akBaseObject.HasKeyWord(ArmorHelmet) || (!sauhClothingExclusion.GetValue() && akBaseObject.HasKeyWord(ClothingHead))
 		Int SlotMask = (akBaseObject As Armor).GetSlotMask()
 		Int i = PlayerScript.BlackList.Length
 		While i > 0
