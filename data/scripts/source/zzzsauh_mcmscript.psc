@@ -13,13 +13,14 @@ Spell Property NpcCloakAbility Auto
 MagicEffect Property ConfigEffect Auto
 Bool Property bIsBusy = False Auto Hidden
 Int flags
+Bool bOnConfigOpen = False
 
 String[] _npcInclusionStates
 String[] _npcDistroMethods
 Int[] _globals
 
 Int Function getVersion()
-	return 100
+	return 101
 EndFunction
 
 Function initPages()
@@ -36,10 +37,13 @@ Function setArrays()
 EndFunction
 
 Event OnVersionUpdate(Int version)
+	If (version >= 101 && CurrentVersion < 101)
+		Debug.Trace(self + ": Updating script to version " + 101)
+	EndIf
 EndEvent
 
 Event OnGameReload()
-	parent.OnGameReload()
+	Parent.OnGameReload()
 EndEvent
 
 Event OnConfigInit()
@@ -52,7 +56,9 @@ Event OnConfigClose()
 EndEvent
 
 Event OnConfigOpen()
+	bOnConfigOpen = True
 	getGlobals()
+	bOnConfigOpen = False
 EndEvent
 
 Event OnPageReset(String page)
@@ -217,23 +223,25 @@ EndFunction
 
 Function getGlobals()
 	checkGlobals()
-	_globals = New Int[5]
+	_globals = New Int[4]
 	_globals[0] = sauhState.GetValueInt()
 	_globals[1] = sauhUnusualsExclusion.GetValueInt()
 	_globals[2] = sauhClothingExclusion.GetValueInt()
 	_globals[3] = sauhNPCEffectState.GetValueInt()
-	_globals[4] = sauhNPCEffectMethod.GetValueInt()
 EndFunction
 
 State Commit
 	Event OnBeginState()
-		If _globals[0] != sauhState.GetValueInt()
-			toggleSAUH(sauhState.GetValueInt(),False)
-		ElseIf (_globals[1] != sauhUnusualsExclusion.GetValueInt()) || \
-		(_globals[2] != sauhClothingExclusion.GetValueInt()) || \
-		(_globals[3] != sauhNPCEffectState.GetValueInt())
-			toggleSAUH(False)
-			toggleSAUH(True)
+		If !bOnConfigOpen
+			If _globals[0] != sauhState.GetValueInt()
+				toggleSAUH(sauhState.GetValueInt(),False)
+			ElseIf \
+			(_globals[1] != sauhUnusualsExclusion.GetValueInt()) || \
+			(_globals[2] != sauhClothingExclusion.GetValueInt()) || \
+			(_globals[3] != sauhNPCEffectState.GetValueInt())
+				toggleSAUH(False)
+				toggleSAUH(True)
+			EndIf
 		EndIf
 		GoToState("")
 	EndEvent
@@ -263,3 +271,4 @@ Function toggleSAUH(Bool bToggle, Bool bReset = True)
 		Debug.notification("Auto Unequip Headgears Stopped")
 	EndIf
 EndFunction
+
