@@ -7,25 +7,32 @@ FormList Property HeadgearIgnoreList Auto
 GlobalVariable Property sauhNPCEffectState Auto
 GlobalVariable Property sauhUnusualsExclusion Auto
 GlobalVariable Property sauhClothingExclusion Auto
+GlobalVariable Property sauhEnemiesExclusion Auto
+GlobalVariable Property sauhFollowersExclusion Auto
+Actor Property PlayerRef Auto
 Spell Property NPCMonitorAbility Auto
 Form[] ItemList
 Actor MySelf
 
 Event OnEffectStart(Actor akTarget, Actor akCaster)
 	;Debug.Trace(Self + " started")
-	If akTarget As Actor
-		MySelf = akTarget
-		ItemList = New Form[5]
-		RegisterHeadgears(MySelf)
-		If !MySelf.IsWeaponDrawn()
-			GoToState("Unequipping")
-			;Debug.Trace(Self + " unequipping")
+	If (akTarget As Actor) 
+		If bIsIncluded(akTarget)
+			MySelf = akTarget
+			ItemList = New Form[5]
+			RegisterHeadgears(MySelf)
+			If !MySelf.IsWeaponDrawn()
+				GoToState("Unequipping")
+				;Debug.Trace(Self + " unequipping")
+			Else
+				GoToState("")
+			EndIf
+			RegisterForModEvent("AuhNpcEffectStop","OnAuhNpcEffectStop")
+			RegisterForAnimationEvent(MySelf,"WeaponDraw")
+			RegisterForAnimationEvent(MySelf,"WeaponSheathe")
 		Else
-			GoToState("")
+			Dispel()
 		EndIf
-		RegisterForModEvent("AuhNpcEffectStop","OnAuhNpcEffectStop")
-		RegisterForAnimationEvent(MySelf,"WeaponDraw")
-		RegisterForAnimationEvent(MySelf,"WeaponSheathe")
 	Else
 		Dispel()
 	EndIf
@@ -73,6 +80,7 @@ Event OnAnimationEvent(ObjectReference akSource, String asEventName)
 EndEvent
 
 Event OnObjectEquipped(Form akBaseObject, ObjectReference akReference)
+	Utility.Wait(0.2)
 	If bIsArmor(akBaseObject)
 		If MySelf.IsWeaponDrawn()
 			If bIsHeadgear(akBaseObject) && ( sauhNPCEffectState.GetValue() != 2 || bIsHeadgearValid(akBaseObject) )
@@ -190,6 +198,7 @@ State Dispelling
 							Else
 								MySelf.EquipItem(ItemList[i], abSilent = True)
 							EndIf
+							Utility.Wait(0.2)
 							ItemList[i] = None
 						EndIf
 					EndIf
@@ -235,6 +244,7 @@ State Equipping
 					Else
 						MySelf.EquipItem(ItemList[i], abSilent = True)
 					EndIf
+					Utility.Wait(0.2)
 				Else
 					ItemList[i] = None
 				EndIf
@@ -255,6 +265,7 @@ State Unequipping
 			i -= 1
 			If ItemList[i]
 				MySelf.UnequipItem(ItemList[i], abSilent = True)
+				Utility.Wait(0.2)
 			EndIf
 		EndWhile
 		GoToState("")
@@ -326,4 +337,9 @@ Int Function iIsInList(Form akForm, FormList akFormList)
 		Endwhile
 	EndIf
 	Return -1
+EndFunction
+
+Bool Function bIsIncluded(Actor akActor)
+Return (!sauhFollowersExclusion.GetValue() || !akActor.IsPlayerTeammate()) && \
+(!sauhEnemiesExclusion.GetValue() || (!akActor.IsHostileToActor(PlayerRef) && (akActor.GetFactionReaction(PlayerRef) != 1)))
 EndFunction

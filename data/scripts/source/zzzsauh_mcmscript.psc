@@ -5,6 +5,9 @@ GlobalVariable Property sauhUnusualsExclusion Auto
 GlobalVariable Property sauhClothingExclusion Auto
 GlobalVariable Property sauhNPCEffectState Auto
 GlobalVariable Property sauhNPCEffectMethod Auto
+GlobalVariable Property sauhEnemiesExclusion Auto
+GlobalVariable Property sauhFollowersExclusion Auto
+zzzsauh_PlayerScript Property PlayerScript Auto
 Quest Property PlayerQuest Auto
 Quest Property NPCDetector Auto
 Quest Property FollowerDetector Auto
@@ -20,7 +23,7 @@ String[] _npcDistroMethods
 Int[] _globals
 
 Int Function getVersion()
-	return 101
+	Return 101
 EndFunction
 
 Function initPages()
@@ -69,7 +72,7 @@ Event OnPageReset(String page)
 		Return
 	EndIf
 	setArrays()
-	AddHeaderOption("Auto Unequip Headgears v" + GetVersion() / 100.0)
+	AddHeaderOption("Auto Unequip Headgears v" + PlayerScript.getCurrentVersion())
 	AddToggleOptionST("ENABLED_TOGGLE", "$mrt_AUH_ENABLED_TOGGLE", sauhState.GetValueInt())
 	AddEmptyOption()
 	AddHeaderOption("$mrt_AUH_Head_Headgear")
@@ -94,6 +97,8 @@ Event OnPageReset(String page)
 	Else
 		flags = OPTION_FLAG_DISABLED
 	EndIf
+	AddToggleOptionST("FOLLOWERS_TOGGLE", "$mrt_AUH_FOLLOWERS_TOGGLE", sauhFollowersExclusion.GetValueInt(), flags)
+	AddToggleOptionST("ENEMIES_TOGGLE", "$mrt_AUH_ENEMIES_TOGGLE", sauhEnemiesExclusion.GetValueInt(), flags)
 	AddMenuOptionST("NPC_DISTRO_METHOD_MENU", "$mrt_AUH_NPC_DISTRO_METHOD_MENU", _npcDistroMethods[sauhNPCEffectMethod.GetValueInt()], flags)
 EndEvent
 
@@ -153,6 +158,46 @@ State UNUSUALS_TOGGLE
 
 	Event OnHighlightST()
 		SetInfoText("$mrt_AUH_DESC_UNUSUALS_TOGGLE")
+	EndEvent
+EndState
+
+State FOLLOWERS_TOGGLE
+	Event OnSelectST()
+		If sauhFollowersExclusion.GetValueInt()
+			sauhFollowersExclusion.SetValueInt(0)
+		Else
+			sauhFollowersExclusion.SetValueInt(1)
+		EndIf
+		SetToggleOptionValueST(sauhFollowersExclusion.GetValueInt())
+	EndEvent
+
+	Event OnDefaultST()
+		sauhFollowersExclusion.SetValueInt(0)
+		SetToggleOptionValueST(sauhFollowersExclusion.GetValueInt())
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("$mrt_AUH_DESC_FOLLOWERS_TOGGLE")
+	EndEvent
+EndState
+
+State ENEMIES_TOGGLE
+	Event OnSelectST()
+		If sauhEnemiesExclusion.GetValueInt()
+			sauhEnemiesExclusion.SetValueInt(0)
+		Else
+			sauhEnemiesExclusion.SetValueInt(1)
+		EndIf
+		SetToggleOptionValueST(sauhEnemiesExclusion.GetValueInt())
+	EndEvent
+
+	Event OnDefaultST()
+		sauhEnemiesExclusion.SetValueInt(0)
+		SetToggleOptionValueST(sauhEnemiesExclusion.GetValueInt())
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("$mrt_AUH_DESC_ENEMIES_TOGGLE")
 	EndEvent
 EndState
 
@@ -223,11 +268,13 @@ EndFunction
 
 Function getGlobals()
 	checkGlobals()
-	_globals = New Int[4]
+	_globals = New Int[6]
 	_globals[0] = sauhState.GetValueInt()
 	_globals[1] = sauhUnusualsExclusion.GetValueInt()
 	_globals[2] = sauhClothingExclusion.GetValueInt()
 	_globals[3] = sauhNPCEffectState.GetValueInt()
+	_globals[4] = sauhFollowersExclusion.GetValueInt()
+	_globals[5] = sauhEnemiesExclusion.GetValueInt()
 EndFunction
 
 State Commit
@@ -238,7 +285,9 @@ State Commit
 			ElseIf \
 			(_globals[1] != sauhUnusualsExclusion.GetValueInt()) || \
 			(_globals[2] != sauhClothingExclusion.GetValueInt()) || \
-			(_globals[3] != sauhNPCEffectState.GetValueInt())
+			(_globals[3] != sauhNPCEffectState.GetValueInt()) || \
+			(_globals[4] != sauhFollowersExclusion.GetValueInt()) || \
+			(_globals[5] != sauhEnemiesExclusion.GetValueInt())
 				toggleSAUH(False)
 				toggleSAUH(True)
 			EndIf

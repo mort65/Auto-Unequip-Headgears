@@ -5,13 +5,18 @@ Quest Property NPCDetector Auto
 Quest Property FollowerDetector Auto
 Message Property sauhConfigMenu Auto
 Message Property sauhConfigMenu0 Auto
+Message Property sauhConfigMenu1 Auto
+Message Property sauhConfigMenu2 Auto
 Message Property sauhConfigMenu3 Auto
 Message Property sauhConfigMenu4 Auto
+Message Property sauhConfigMenu5 Auto
 GlobalVariable Property sauhState Auto
 GlobalVariable Property sauhUnusualsExclusion Auto
 GlobalVariable Property sauhNPCEffectState Auto
 GlobalVariable Property sauhNPCEffectMethod Auto
 GlobalVariable Property sauhClothingExclusion Auto
+GlobalVariable Property sauhFollowersExclusion Auto
+GlobalVariable Property sauhEnemiesExclusion Auto
 ReferenceAlias Property PlayerAlias Auto
 Spell Property NpcCloakAbility Auto
 zzzsauh_mcmscript Property MCMScript Auto
@@ -42,10 +47,12 @@ Function configMenu(Int aiMessage = 0, Int aiButton = 0)
 			ElseIf aiButton == 2
 				aiMessage = 3
 			ElseIf aiButton == 3
-				toggleSAUH(True)
+				aiMessage = 4
 			ElseIf aiButton == 4
-				toggleSAUH(False)
-			ElseIf aiButton == 5 ;Exit
+				aiMessage = 5
+			ElseIf aiButton == 5
+				aiMessage = 6
+			ElseIf aiButton == 6
 				Return
 			EndIf
 		ElseIf aiMessage == 1
@@ -68,30 +75,54 @@ Function configMenu(Int aiMessage = 0, Int aiButton = 0)
 				return
 			EndIf
 		ElseIf aiMessage == 2
+			aiButton = sauhConfigMenu1.Show()
+			If aiButton == -1
+			ElseIf aiButton == 0
+				toggleSAUH(False)
+				sauhFollowersExclusion.SetValue(1)
+				toggleSAUH(True)
+			ElseIf aiButton == 1
+				toggleSAUH(False)
+				sauhFollowersExclusion.SetValue(0)
+				toggleSAUH(True)
+			ElseIf aiButton == 2
+				aiMessage = 0
+			ElseIf aiButton == 3
+				Return
+			EndIf
+		ElseIf aiMessage == 3
+			aiButton = sauhConfigMenu2.Show()
+			If aiButton == -1
+			ElseIf aiButton == 0
+				toggleSAUH(False)
+				sauhEnemiesExclusion.SetValue(1)
+				toggleSAUH(True)
+			ElseIf aiButton == 1
+				toggleSAUH(False)
+				sauhEnemiesExclusion.SetValue(0)
+				toggleSAUH(True)
+			ElseIf aiButton == 2
+				aiMessage = 0
+			ElseIf aiButton == 3
+				Return
+			EndIf
+		ElseIf aiMessage == 4
 			aiButton = sauhConfigMenu4.Show()
 			If aiButton == -1
 			ElseIf aiButton == 0
-				Float g = sauhNPCEffectState.GetValue()
 				toggleSAUH(False)
-				sauhNPCEffectState.SetValue(g)
 				sauhUnusualsExclusion.SetValue(0)
 				toggleSAUH(True)
 			ElseIf aiButton == 1
-				Float g = sauhNPCEffectState.GetValue()
 				toggleSAUH(False)
-				sauhNPCEffectState.SetValue(g)
 				sauhUnusualsExclusion.SetValue(1)
 				toggleSAUH(True)
 			ElseIf aiButton == 2
-				Float g = sauhNPCEffectState.GetValue()
 				toggleSAUH(False)
-				sauhNPCEffectState.SetValue(g)
 				sauhClothingExclusion.SetValue(0)
 				toggleSAUH(True)
 			ElseIf aiButton == 3
-				Float g = sauhNPCEffectState.GetValue()
 				toggleSAUH(False)
-				sauhNPCEffectState.SetValue(g)
 				sauhClothingExclusion.SetValue(1)
 				toggleSAUH(True)
 			ElseIf aiButton == 4
@@ -99,7 +130,7 @@ Function configMenu(Int aiMessage = 0, Int aiButton = 0)
 			ElseIf aiButton == 5
 				return
 			EndIf
-		ElseIf aiMessage == 3
+		ElseIf aiMessage == 5
 			aiButton = sauhConfigMenu3.Show()
 			If aiButton == -1
 			ElseIf aiButton == 0
@@ -110,6 +141,18 @@ Function configMenu(Int aiMessage = 0, Int aiButton = 0)
 				aiMessage = 0
 			ElseIf aiButton == 3
 				return
+			EndIf
+		ElseIf aiMessage == 6
+			aiButton = sauhConfigMenu5.Show()
+			If aiButton == -1
+			ElseIf aiButton == 0
+				toggleSAUH(True,False)
+			ElseIf aiButton == 1
+				toggleSAUH(False,False)
+			ElseIf aiButton == 2
+				aiMessage = 0
+			ElseIf aiButton == 3
+				Return
 			EndIf
 		EndIf
 	EndWhile
@@ -127,7 +170,7 @@ State Busy
 	EndEvent
 EndState
 
-Function toggleSAUH(Bool bToggle)
+Function toggleSAUH(Bool bToggle, Bool bReset = True)
 	If bToggle
 		PlayerQuest.Start()
 		sauhState.SetValue(1)
@@ -143,7 +186,9 @@ Function toggleSAUH(Bool bToggle)
 		Game.GetPlayer().DispelSpell(NpcCloakAbility)
 		Game.GetPlayer().RemoveSpell(NpcCloakAbility)
 		sauhState.SetValue(0)
-		sauhNPCEffectState.SetValue(0)
+		If !bReset
+			sauhNPCEffectState.SetValue(0)
+		EndIf
 		PlayerAlias.SendModEvent("AuhNpcEffectStop")
 		Utility.Wait(3.0)
 		Debug.notification("Auto Unequip Headgears Stopped")
