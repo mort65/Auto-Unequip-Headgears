@@ -60,7 +60,7 @@ Function configMenu(Int aiMessage = 0, Int aiButton = 0)
 			aiButton = sauhConfigMenu0.Show()
 			If aiButton == -1
 			ElseIf aiButton == 0
-				toggleSAUH(False)
+				toggleSAUH(False,False)
 				toggleSAUH(True)
 			ElseIf aiButton == 1
 				toggleSAUH(False)
