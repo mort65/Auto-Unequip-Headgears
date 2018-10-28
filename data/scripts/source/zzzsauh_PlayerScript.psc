@@ -11,6 +11,7 @@ Spell Property NpcCloakAbility Auto
 GlobalVariable Property sauhState Auto
 GlobalVariable Property sauhNPCEffectState Auto
 GlobalVariable Property sauhNPCEffectMethod Auto
+GlobalVariable Property sauhVersion Auto
 Bool Property bSKSE Auto Hidden
 Form[] Property ItemList Auto Hidden
 Int[] Property BlackList Auto Hidden
@@ -65,6 +66,9 @@ EndEvent
 Event OnPlayerLoadGame()
 	bSKSE = bCheckSKSE()
 	DLC1VampireBeastRace = Game.GetFormFromFile(0x283a, "Dawnguard.esm") as Race
+	If sauhVersion.GetValue() < getCurrentVersion()
+		Update()
+	EndIf
 	RegisterForAnimationEvent(PlayerRef,"WeaponDraw")
 	RegisterForAnimationEvent(PlayerRef,"WeaponSheathe")
 EndEvent
@@ -120,6 +124,7 @@ Event OnAnimationEvent(ObjectReference akSource, String asEventName)
 EndEvent
 
 Event OnObjectEquipped(Form akBaseObject, ObjectReference akReference)
+	Utility.Wait(0.2)
 	If bIsArmor(akBaseObject)
 		If PlayerRef.IsWeaponDrawn()
 			If bIsHeadgear(akBaseObject)
@@ -232,6 +237,7 @@ State Equipping
 					Else
 						PlayerRef.EquipItem(ItemList[i], abSilent = True)
 					EndIf
+					Utility.Wait(0.2)
 				Else
 					ItemList[i] = None
 				EndIf
@@ -252,6 +258,7 @@ State Unequipping
 			i -= 1
 			If ItemList[i]
 				PlayerRef.UnequipItem(ItemList[i], abSilent = True)
+				Utility.Wait(0.2)
 			EndIf
 		EndWhile
 		GoToState("")
@@ -313,4 +320,17 @@ EndFunction
 
 Bool Function bCheckSKSE()
 	Return ( SKSE.GetVersion() == 1 && SKSE.GetVersionRelease() >= 43 ) || ( SKSE.GetVersion() == 2 && SKSE.GetVersionRelease() >= 54 )
+EndFunction
+
+Float Function getBaseVersion()
+	Return 1.0
+EndFunction
+
+Float Function getCurrentVersion()
+	Return getBaseVersion() + 0.02
+EndFunction
+
+Function Update()
+	sauhVersion.SetValue(getCurrentVersion())
+	Debug.Trace("Auto Unequip Headgears updated to version " + getCurrentVersion())
 EndFunction
