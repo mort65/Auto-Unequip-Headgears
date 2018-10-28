@@ -198,8 +198,8 @@ State Dispelling
 							Else
 								MySelf.EquipItem(ItemList[i], abSilent = True)
 							EndIf
-							Utility.Wait(0.2)
 							ItemList[i] = None
+							Utility.Wait(0.2)
 						EndIf
 					EndIf
 				EndWhile
@@ -281,7 +281,8 @@ Bool Function bIsArmor(Form akBaseObject)
 EndFunction
 
 Bool Function bIsHeadgear(Form akBaseObject)
-	If akBaseObject.HasKeyWord(ArmorHelmet) || (!sauhClothingExclusion.GetValue() && akBaseObject.HasKeyWord(ClothingHead))
+	If ((sauhClothingExclusion.GetValue() != 2) && akBaseObject.HasKeyWord(ArmorHelmet)) || \
+	((sauhClothingExclusion.GetValue() != 1) && akBaseObject.HasKeyWord(ClothingHead))
 		Int SlotMask = (akBaseObject As Armor).GetSlotMask()
 		Int i = PlayerScript.BlackList.Length
 		While i > 0

@@ -10,6 +10,9 @@ Message Property sauhConfigMenu2 Auto
 Message Property sauhConfigMenu3 Auto
 Message Property sauhConfigMenu4 Auto
 Message Property sauhConfigMenu5 Auto
+Message Property sauhConfigMenu6 Auto
+Message Property sauhConfigMenu7 Auto
+Message Property sauhConfigMenu8 Auto
 GlobalVariable Property sauhState Auto
 GlobalVariable Property sauhUnusualsExclusion Auto
 GlobalVariable Property sauhNPCEffectState Auto
@@ -43,16 +46,14 @@ Function configMenu(Int aiMessage = 0, Int aiButton = 0)
 			ElseIf aiButton == 0
 				aiMessage = 1
 			ElseIf aiButton == 1
-				aiMessage = 2
+				aiMessage = 7
 			ElseIf aiButton == 2
-				aiMessage = 3
+				aiMessage = 8
 			ElseIf aiButton == 3
-				aiMessage = 4
+				aiMessage = 9
 			ElseIf aiButton == 4
-				aiMessage = 5
-			ElseIf aiButton == 5
 				aiMessage = 6
-			ElseIf aiButton == 6
+			ElseIf aiButton == 5
 				Return
 			EndIf
 		ElseIf aiMessage == 1
@@ -86,7 +87,7 @@ Function configMenu(Int aiMessage = 0, Int aiButton = 0)
 				sauhFollowersExclusion.SetValue(0)
 				toggleSAUH(True)
 			ElseIf aiButton == 2
-				aiMessage = 0
+				aiMessage = 8
 			ElseIf aiButton == 3
 				Return
 			EndIf
@@ -102,7 +103,7 @@ Function configMenu(Int aiMessage = 0, Int aiButton = 0)
 				sauhEnemiesExclusion.SetValue(0)
 				toggleSAUH(True)
 			ElseIf aiButton == 2
-				aiMessage = 0
+				aiMessage = 8
 			ElseIf aiButton == 3
 				Return
 			EndIf
@@ -118,16 +119,8 @@ Function configMenu(Int aiMessage = 0, Int aiButton = 0)
 				sauhUnusualsExclusion.SetValue(1)
 				toggleSAUH(True)
 			ElseIf aiButton == 2
-				toggleSAUH(False)
-				sauhClothingExclusion.SetValue(0)
-				toggleSAUH(True)
+				aiMessage = 9
 			ElseIf aiButton == 3
-				toggleSAUH(False)
-				sauhClothingExclusion.SetValue(1)
-				toggleSAUH(True)
-			ElseIf aiButton == 4
-				aiMessage = 0
-			ElseIf aiButton == 5
 				return
 			EndIf
 		ElseIf aiMessage == 5
@@ -138,7 +131,7 @@ Function configMenu(Int aiMessage = 0, Int aiButton = 0)
 			ElseIf aiButton == 1
 				sauhNPCEffectMethod.SetValue(1)
 			ElseIf aiButton == 2
-				aiMessage = 0
+				aiMessage = 8
 			ElseIf aiButton == 3
 				return
 			EndIf
@@ -154,6 +147,50 @@ Function configMenu(Int aiMessage = 0, Int aiButton = 0)
 			ElseIf aiButton == 3
 				Return
 			EndIf
+		ElseIf aiMessage == 7
+			aiButton = sauhConfigMenu6.Show()
+			If aiButton == -1
+			ElseIf aiButton == 0
+				toggleSAUH(False)
+				sauhClothingExclusion.SetValue(0)
+				toggleSAUH(True)
+			ElseIf aiButton == 1
+				toggleSAUH(False)
+				sauhClothingExclusion.SetValue(1)
+				toggleSAUH(True)
+			ElseIf aiButton == 2
+				toggleSAUH(False)
+				sauhClothingExclusion.SetValue(2)
+				toggleSAUH(True)
+			ElseIf aiButton == 3
+				aiMessage = 0
+			ElseIf aiButton == 4
+				Return
+			EndIf
+		ElseIf aiMessage == 8
+			aiButton = sauhConfigMenu7.Show()
+			If aiButton == -1
+			ElseIf aiButton == 0
+				aiMessage = 2
+			ElseIf aiButton == 1
+				aiMessage = 3
+			ElseIf aiButton == 2
+				aiMessage = 5
+			ElseIf aiButton == 3
+				aiMessage = 0
+			ElseIf aiButton == 4
+				Return
+			EndIf
+		ElseIf aiMessage == 9
+			aiButton = sauhConfigMenu8.Show()
+			If aiButton == -1
+			ElseIf aiButton == 0
+				aiMessage = 4
+			ElseIf aiButton == 1
+				aiMessage = 0
+			ElseIf aiButton == 2
+				Return
+			EndIf
 		EndIf
 	EndWhile
 EndFunction
@@ -162,6 +199,10 @@ Function checkGlobals()
 	Float g = sauhNPCEffectState.GetValue()
 	If g != 0.0 && g != 1.0 && g != 2.0
 		sauhNPCEffectState.SetValue(0)
+	EndIf
+	g == sauhClothingExclusion.GetValue()
+	If g != 0.0 && g != 1.0 && g != 2.0
+		sauhClothingExclusion.SetValue(0)
 	EndIf
 EndFunction
 

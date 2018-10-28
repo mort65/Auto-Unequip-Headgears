@@ -20,6 +20,7 @@ Bool bOnConfigOpen = False
 
 String[] _npcInclusionStates
 String[] _npcDistroMethods
+String[] _headgearIncStates
 Int[] _globals
 
 Int Function getVersion()
@@ -37,6 +38,10 @@ Function setArrays()
 	_npcDistroMethods = New String[2]
 	_npcDistroMethods[0] = "$NPCDistroMethods_0"
 	_npcDistroMethods[1] = "$NPCDistroMethods_1"
+	_headgearIncStates = New String[3]
+	_headgearIncStates[0] = "$HeadgearIncStates_0"
+	_headgearIncStates[1] = "$HeadgearIncStates_1"
+	_headgearIncStates[2] = "$HeadgearIncStates_2"
 EndFunction
 
 Event OnVersionUpdate(Int version)
@@ -75,16 +80,6 @@ Event OnPageReset(String page)
 	AddHeaderOption("Auto Unequip Headgears v" + PlayerScript.getCurrentVersion())
 	AddToggleOptionST("ENABLED_TOGGLE", "$mrt_AUH_ENABLED_TOGGLE", sauhState.GetValueInt())
 	AddEmptyOption()
-	AddHeaderOption("$mrt_AUH_Head_Headgear")
-	If (sauhState.GetValueInt() != 0) && (sauhNPCEffectState.GetValueInt() == 2)
-		flags = OPTION_FLAG_NONE
-	Else
-		flags = OPTION_FLAG_DISABLED
-	EndIf
-	AddToggleOptionST("CLOTHINGS_TOGGLE", "$mrt_AUH_CLOTHINGS_TOGGLE", sauhClothingExclusion.GetValueInt(), flags)
-	AddToggleOptionST("UNUSUALS_TOGGLE", "$mrt_AUH_UNUSUALS_TOGGLE", sauhUnusualsExclusion.GetValueInt(), flags)
-	
-	SetCursorPosition(1)
 	AddHeaderOption("$mrt_AUH_Head_NPC")
 	If (sauhState.GetValueInt() != 0)
 		flags = OPTION_FLAG_NONE
@@ -100,6 +95,15 @@ Event OnPageReset(String page)
 	AddToggleOptionST("FOLLOWERS_TOGGLE", "$mrt_AUH_FOLLOWERS_TOGGLE", sauhFollowersExclusion.GetValueInt(), flags)
 	AddToggleOptionST("ENEMIES_TOGGLE", "$mrt_AUH_ENEMIES_TOGGLE", sauhEnemiesExclusion.GetValueInt(), flags)
 	AddMenuOptionST("NPC_DISTRO_METHOD_MENU", "$mrt_AUH_NPC_DISTRO_METHOD_MENU", _npcDistroMethods[sauhNPCEffectMethod.GetValueInt()], flags)
+	SetCursorPosition(1)
+	AddHeaderOption("$mrt_AUH_Head_Headgear")
+	If (sauhState.GetValueInt() != 0) && (sauhNPCEffectState.GetValueInt() == 2)
+		flags = OPTION_FLAG_NONE
+	Else
+		flags = OPTION_FLAG_DISABLED
+	EndIf
+	AddMenuOptionST("HEADGEARS_INCLUSION_MENU", "$mrt_AUH_HEADGEARS_INCLUSION_MENU", _headgearIncStates[sauhClothingExclusion.GetValueInt()], flags)
+	AddToggleOptionST("UNUSUALS_TOGGLE", "$mrt_AUH_UNUSUALS_TOGGLE", sauhUnusualsExclusion.GetValueInt(), flags)
 EndEvent
 
 
@@ -121,23 +125,26 @@ State ENABLED_TOGGLE
 	EndEvent
 EndState
 
-State CLOTHINGS_TOGGLE
-	Event OnSelectST()
-		If sauhClothingExclusion.GetValueInt()
-			sauhClothingExclusion.SetValueInt(0)
-		Else
-			sauhClothingExclusion.SetValueInt(1)
-		EndIf
-		SetToggleOptionValueST(sauhClothingExclusion.GetValueInt())
+State HEADGEARS_INCLUSION_MENU
+
+	Event OnMenuOpenST()
+		SetMenuDialogStartIndex(sauhClothingExclusion.GetValueInt())
+		SetMenuDialogDefaultIndex(0)
+		SetMenuDialogOptions(_headgearIncStates)
+	EndEvent
+
+	Event OnMenuAcceptST(int index)
+		sauhClothingExclusion.SetValue(index)
+		SetMenuOptionValueST(_headgearIncStates[sauhClothingExclusion.GetValueInt()],True)
 	EndEvent
 
 	Event OnDefaultST()
-		sauhClothingExclusion.SetValueInt(0)
-		SetToggleOptionValueST(sauhClothingExclusion.GetValueInt())
+		sauhClothingExclusion.SetValue(0)
+		SetMenuOptionValueST(_headgearIncStates[sauhClothingExclusion.GetValueInt()],True)
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("$mrt_AUH_DESC_CLOTHINGS_TOGGLE")
+		SetInfoText("$mrt_AUH_DESC_HEADGEARS_INCLUSION_MENU")
 	EndEvent
 EndState
 
@@ -216,7 +223,7 @@ State NPC_INCLUSION_MENU
 		Else
 			flags = OPTION_FLAG_DISABLED
 		EndIf
-		SetOptionFlagsST(flags, True, "CLOTHINGS_TOGGLE")
+		SetOptionFlagsST(flags, True, "HEADGEARS_INCLUSION_MENU")
 		SetOptionFlagsST(flags, True, "UNUSUALS_TOGGLE")
 		SetOptionFlagsST(flags, "NPC_DISTRO_METHOD_MENU")
 		ForcePageReset()
@@ -226,7 +233,7 @@ State NPC_INCLUSION_MENU
 		sauhNPCEffectState.SetValue(0)
 		SetMenuOptionValueST(_npcInclusionStates[sauhNPCEffectState.GetValueInt()],True)
 		flags = OPTION_FLAG_DISABLED
-		SetOptionFlagsST(flags, True, "CLOTHINGS_TOGGLE")
+		SetOptionFlagsST(flags, True, "HEADGEARS_INCLUSION_MENU")
 		SetOptionFlagsST(flags, True, "UNUSUALS_TOGGLE")
 		SetOptionFlagsST(flags, "NPC_DISTRO_METHOD_MENU")
 		ForcePageReset()
@@ -263,6 +270,10 @@ Function checkGlobals()
 	Float g = sauhNPCEffectState.GetValue()
 	If g != 0.0 && g != 1.0 && g != 2.0
 		sauhNPCEffectState.SetValue(0)
+	EndIf
+	g == sauhClothingExclusion.GetValue()
+	If g != 0.0 && g != 1.0 && g != 2.0
+		sauhClothingExclusion.SetValue(0)
 	EndIf
 EndFunction
 
