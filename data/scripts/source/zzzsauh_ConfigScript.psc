@@ -13,15 +13,28 @@ Message Property sauhConfigMenu5 Auto
 Message Property sauhConfigMenu6 Auto
 Message Property sauhConfigMenu7 Auto
 Message Property sauhConfigMenu8 Auto
+Message Property sauhConfigMenu9 Auto
+Message Property sauhConfigMenu10 Auto
+Message Property sauhConfigMenu11 Auto
+Message Property sauhConfigMenu12 Auto
+Message Property sauhConfigMenu13 Auto
 GlobalVariable Property sauhState Auto
 GlobalVariable Property sauhUnusualsExclusion Auto
 GlobalVariable Property sauhNPCEffectState Auto
 GlobalVariable Property sauhNPCEffectMethod Auto
+GlobalVariable Property sauhNPCModifMethod Auto
 GlobalVariable Property sauhClothingExclusion Auto
 GlobalVariable Property sauhFollowersExclusion Auto
 GlobalVariable Property sauhEnemiesExclusion Auto
+GlobalVariable Property sauhGuardsExclusion Auto
+GlobalVariable Property sauhLocsExclusion Auto
+GlobalVariable Property sauhLocsInclusion Auto
 ReferenceAlias Property PlayerAlias Auto
 Spell Property NpcCloakAbility Auto
+Spell Property NpcModifSpell Auto
+Spell Property CellChangeDetector Auto
+Objectreference Property StalkerObject Auto
+zzzsauh_PlayerScript Property PlayerScript Auto
 zzzsauh_mcmscript Property MCMScript Auto
 
 Event OnEffectStart(Actor akTarget, Actor akCaster)
@@ -52,8 +65,10 @@ Function configMenu(Int aiMessage = 0, Int aiButton = 0)
 			ElseIf aiButton == 3
 				aiMessage = 9
 			ElseIf aiButton == 4
-				aiMessage = 6
+				aiMessage = 12
 			ElseIf aiButton == 5
+				aiMessage = 6
+			ElseIf aiButton == 6
 				Return
 			EndIf
 		ElseIf aiMessage == 1
@@ -173,12 +188,16 @@ Function configMenu(Int aiMessage = 0, Int aiButton = 0)
 			ElseIf aiButton == 0
 				aiMessage = 2
 			ElseIf aiButton == 1
-				aiMessage = 3
+				aiMessage = 10
 			ElseIf aiButton == 2
-				aiMessage = 5
+				aiMessage = 3
 			ElseIf aiButton == 3
-				aiMessage = 0
+				aiMessage = 5
 			ElseIf aiButton == 4
+				aiMessage = 11
+			ElseIf aiButton == 5
+				aiMessage = 0
+			ElseIf aiButton == 6
 				Return
 			EndIf
 		ElseIf aiMessage == 9
@@ -189,6 +208,75 @@ Function configMenu(Int aiMessage = 0, Int aiButton = 0)
 			ElseIf aiButton == 1
 				aiMessage = 0
 			ElseIf aiButton == 2
+				Return
+			EndIf
+		ElseIf aiMessage == 10
+			aiButton = sauhConfigMenu9.Show()
+			If aiButton == -1
+			ElseIf aiButton == 0
+				toggleSAUH(False)
+				sauhGuardsExclusion.SetValue(1)
+				toggleSAUH(True)
+			ElseIf aiButton == 1
+				toggleSAUH(False)
+				sauhGuardsExclusion.SetValue(0)
+				toggleSAUH(True)
+			ElseIf aiButton == 2
+				aiMessage = 8
+			ElseIf aiButton == 3
+				Return
+			EndIf
+		ElseIf aiMessage == 11
+			aiButton = sauhConfigMenu10.Show()
+			If aiButton == -1
+			ElseIf aiButton == 0
+				Game.GetPlayer().RemoveSpell(NpcModifSpell)
+				sauhNPCModifMethod.SetValue(0)
+			ElseIf aiButton == 1
+				Game.GetPlayer().AddSpell(NpcModifSpell)
+				sauhNPCModifMethod.SetValue(1)
+			ElseIf aiButton == 2
+				Game.GetPlayer().AddSpell(NpcModifSpell)
+				sauhNPCModifMethod.SetValue(2)
+			ElseIf aiButton == 3
+				aiMessage = 8
+			ElseIf aiButton == 4
+				Return
+			EndIf
+		ElseIf aiMessage == 12
+			aiButton = sauhConfigMenu11.Show()
+			If aiButton == -1
+			ElseIf aiButton == 0
+				aiMessage = 13
+			ElseIf aiButton == 1
+				aiMessage = 14
+			ElseIf aiButton == 2
+				aiMessage = 0
+			ElseIf aiButton == 3
+				Return
+			EndIf
+		ElseIf aiMessage == 13
+			aiButton = sauhConfigMenu13.Show()
+			If aiButton == -1
+			ElseIf aiButton < 3
+				toggleSAUH(False)
+				sauhLocsInclusion.SetValue(aiButton)
+				toggleSAUH(True)
+			ElseIf aiButton == 3
+				aiMessage = 12
+			ElseIf aiButton == 4
+				Return
+			EndIf
+		ElseIf aiMessage == 14
+			aiButton = sauhConfigMenu12.Show()
+			If aiButton == -1
+			ElseIf aiButton < 3
+				toggleSAUH(False)
+				sauhLocsExclusion.SetValue(aiButton)
+				toggleSAUH(True)
+			ElseIf aiButton == 3
+				aiMessage = 12
+			ElseIf aiButton == 4
 				Return
 			EndIf
 		EndIf
@@ -215,6 +303,12 @@ Function toggleSAUH(Bool bToggle, Bool bReset = True)
 	If bToggle
 		PlayerQuest.Start()
 		sauhState.SetValue(1)
+		If sauhNPCEffectState.GetValueInt() == 2
+			PlayerScript.updateLocState(Game.GetPlayer().GetCurrentLocation())
+			If sauhLocsExclusion.GetValueInt()
+				Game.GetPlayer().AddSpell(CellChangeDetector,False)
+			EndIf
+		EndIf
 	Else
 		PlayerQuest.Stop()
 		Int i = 0
@@ -226,9 +320,12 @@ Function toggleSAUH(Bool bToggle, Bool bReset = True)
 		FollowerDetector.Stop()
 		Game.GetPlayer().DispelSpell(NpcCloakAbility)
 		Game.GetPlayer().RemoveSpell(NpcCloakAbility)
+		Game.GetPlayer().RemoveSpell(NpcModifSpell)
 		sauhState.SetValue(0)
 		If !bReset
 			sauhNPCEffectState.SetValue(0)
+			Game.GetPlayer().RemoveSpell(CellChangeDetector)
+			StalkerObject.MoveToMyEditorLocation()
 		EndIf
 		PlayerAlias.SendModEvent("AuhNpcEffectStop")
 		Utility.Wait(3.0)
