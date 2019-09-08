@@ -9,27 +9,31 @@ GlobalVariable Property sauhUnusualsExclusion Auto
 GlobalVariable Property sauhClothingExclusion Auto
 GlobalVariable Property sauhEnemiesExclusion Auto
 GlobalVariable Property sauhFollowersExclusion Auto
+GlobalVariable Property sauhGuardsExclusion Auto
 Actor Property PlayerRef Auto
 Spell Property NPCMonitorAbility Auto
 Form[] ItemList
 Actor MySelf
+Int iNumRefresher = 0
+Bool bUpdating = False
 
 Event OnEffectStart(Actor akTarget, Actor akCaster)
-	;Debug.Trace(Self + " started")
 	If (akTarget As Actor) 
 		If bIsIncluded(akTarget)
 			MySelf = akTarget
 			ItemList = New Form[5]
 			RegisterHeadgears(MySelf)
+			RegisterForModEvent("AuhNpcEffectStop","OnAuhNpcEffectStop")
+			If !MySelf.IsPlayerTeammate()
+				RegisterForModEvent("AuhOtherNpcEffectStop","OnAuhNpcEffectStop")
+			EndIf
+			RegisterForAnimationEvent(MySelf,"WeaponDraw")
+			RegisterForAnimationEvent(MySelf,"WeaponSheathe")
 			If !MySelf.IsWeaponDrawn()
 				GoToState("Unequipping")
-				;Debug.Trace(Self + " unequipping")
 			Else
 				GoToState("")
 			EndIf
-			RegisterForModEvent("AuhNpcEffectStop","OnAuhNpcEffectStop")
-			RegisterForAnimationEvent(MySelf,"WeaponDraw")
-			RegisterForAnimationEvent(MySelf,"WeaponSheathe")
 		Else
 			Dispel()
 		EndIf
@@ -39,23 +43,22 @@ Event OnEffectStart(Actor akTarget, Actor akCaster)
 EndEvent
 
 Event OnEffectFinish(Actor akTarget, Actor akCaster)
-	;PlayerScript.ArrayClear(ItemList)
+	GoToState("Equipping")
 	GoToState("Stopped")
-	;Debug.Trace(Self + " finished")
 EndEvent
 
 Event OnPlayerLoadGame()
 	RegisterForModEvent("AuhNpcEffectStop","OnAuhNpcEffectStop")
+	If !MySelf.IsPlayerTeammate()
+		RegisterForModEvent("AuhOtherNpcEffectStop","OnAuhNpcEffectStop")
+	EndIf
 EndEvent
 
 Event OnAuhNpcEffectStop(String eventName, String strArg, Float numArg, Form sender)
-	;Debug.Trace(Self + " dispelling")
 	GoToState("Dispelling")
 EndEvent
 
 Event OnDying(Actor akKiller)
-	;PlayerScript.ArrayClear(ItemList)
-	;Debug.Trace(Self + " died")
 	GoToState("Stopped")
 EndEvent
 
@@ -70,82 +73,54 @@ EndEvent
 Event OnAnimationEvent(ObjectReference akSource, String asEventName)
 	If ( akSource == MySelf ) && sauhNPCEffectState.GetValue()
 		If asEventName == "WeaponDraw"
-			;Debug.Trace(Self + " equipping")
 			GoToState("Equipping")
 		ElseIf asEventName == "WeaponSheathe"
-			;Debug.Trace(Self + " unequipping")
 			GoToState("Unequipping")
 		EndIf
 	EndIf
 EndEvent
 
 Event OnObjectEquipped(Form akBaseObject, ObjectReference akReference)
-	Utility.Wait(0.2)
-	If bIsArmor(akBaseObject)
-		If MySelf.IsWeaponDrawn()
-			If bIsHeadgear(akBaseObject) && ( sauhNPCEffectState.GetValue() != 2 || bIsHeadgearValid(akBaseObject) )
-				If ItemList.Find(akBaseObject) < 0
-					Int i = ItemList.Find(None)
-					If i > -1
-						ItemList[i] = akBaseObject
-					Else
-						Int SlotMask = (akBaseObject As Armor).GetSlotMask()
-						i = ItemList.Length
-						Bool bBreak = False
-						While i > 0 && !bBreak
-							i-= 1
-							If ItemList[i]
-								Int ItemSlotMask = (ItemList[i] As Armor).GetSlotMask()
-								Int j = PlayerScript.WhiteList.Length
-								While j > 0 && !bBreak
-									j -= 1
-									If ( Math.LogicalAnd(SlotMask, PlayerScript.WhiteList[j]) == PlayerScript.WhiteList[j] ) &&\ 
-									( Math.LogicalAnd(ItemSlotMask, PlayerScript.WhiteList[j]) == PlayerScript.WhiteList[j] )
-										ItemList[i] = akBaseObject
-										bBreak = True
-									EndIf
-								EndWhile
-							EndIf
-						EndWhile
-					EndIf
-				EndIf
-			EndIf
-		Else
-			Int SlotMask = (akBaseObject As Armor).GetSlotMask()
-			Int i = ItemList.Length
-			Bool bBreak = False
-			While i > 0 && !bBreak
-				i-= 1
-				If ItemList[i]
-					Int ItemSlotMask = (ItemList[i] As Armor).GetSlotMask()
-					Int j = PlayerScript.WhiteList.Length
-					While j > 0 && !bBreak
-						j -= 1
-						If ( Math.LogicalAnd(SlotMask, PlayerScript.WhiteList[j]) == PlayerScript.WhiteList[j] ) &&\ 
-						( Math.LogicalAnd(ItemSlotMask, PlayerScript.WhiteList[j]) == PlayerScript.WhiteList[j] )
-							ItemList[i] = None
-							bBreak = True
-						EndIf
-					EndWhile
-				EndIf
-			EndWhile
-		EndIf
+	If ((sauhClothingExclusion.GetValue() != 2) && akBaseObject.HasKeyWord(ArmorHelmet)) || \
+	((sauhClothingExclusion.GetValue() != 1) && akBaseObject.HasKeyWord(ClothingHead))
+		UnRegisterForAnimationEvent(MySelf,"WeaponDraw")
+		UnRegisterForAnimationEvent(MySelf,"WeaponSheathe")
+		RegisterForSingleUpdate(1.0)
+		bUpdating = True
 	EndIf
 EndEvent
 
-Event OnObjectUnequipped(Form akBaseObject, ObjectReference akReference)
-	If MySelf.IsWeaponDrawn()
-		Bool bBreak = False
-		While !bBreak
-			Int i = ItemList.Find(akBaseObject)
-			If i > -1
-				ItemList[i] = None
-			Else
-				bBreak = True
-			EndIf
-		EndWhile
-	EndIf
+Event OnUpdate()
+	GoToState("Refreshing")
 EndEvent
+
+Event OnObjectUnequipped(Form akBaseObject, ObjectReference akReference)
+EndEvent
+
+State Refreshing
+	Event OnBeginState()
+		iNumRefresher += 1
+		bUpdating = False
+		PlayerScript.ArrayClear(ItemList)
+		If MySelf As Actor
+			RegisterHeadgears(MySelf)
+			iNumRefresher -= 1
+			If !bUpdating && iNumRefresher <= 0
+				RegisterForAnimationEvent(MySelf,"WeaponDraw")
+				RegisterForAnimationEvent(MySelf,"WeaponSheathe")
+			EndIf
+			GoToState("")
+		EndIf
+	EndEvent
+	Event OnObjectEquipped(Form akBaseObject, ObjectReference akReference)
+	EndEvent
+	Event OnObjectUnequipped(Form akBaseObject, ObjectReference akReference)
+	EndEvent
+	Event OnAnimationEvent(ObjectReference akSource, String asEventName)
+	EndEvent
+	Event OnRaceSwitchComplete()
+	EndEvent
+EndState
 
 State Resetting
 	Event OnBeginState()
@@ -186,7 +161,6 @@ EndState
 State Dispelling
 	Event OnBeginState()
 		If MySelf As Actor
-			;Debug.Trace(Self + " dispelling spell")
 			If ItemList
 				Int i = ItemList.Length
 				While i > 0
@@ -234,22 +208,7 @@ EndState
 
 State Equipping
 	Event OnBeginState()
-		Int i = ItemList.Length
-		While i > 0
-			i -= 1
-			If ItemList[i] 
-				If MySelf.GetItemCount(ItemList[i] As Armor) > 0
-					If PlayerScript.bSKSE
-						MySelf.EquipItemEx(ItemList[i])
-					Else
-						MySelf.EquipItem(ItemList[i], abSilent = True)
-					EndIf
-					Utility.Wait(0.2)
-				Else
-					ItemList[i] = None
-				EndIf
-			EndIf
-		EndWhile
+		EquipHeadgears()
 		GoToState("")
 	EndEvent
 	Event OnObjectEquipped(Form akBaseObject, ObjectReference akReference)
@@ -260,14 +219,7 @@ EndState
 
 State Unequipping
 	Event OnBeginState()
-		Int i = ItemList.Length
-		While i > 0
-			i -= 1
-			If ItemList[i]
-				MySelf.UnequipItem(ItemList[i], abSilent = True)
-				Utility.Wait(0.2)
-			EndIf
-		EndWhile
+		UnequipHeadgears()
 		GoToState("")
 	EndEvent
 	Event OnObjectEquipped(Form akBaseObject, ObjectReference akReference)
@@ -307,6 +259,36 @@ Bool Function bIsHeadgearValid(Form akBaseObject)
 	Return !akBaseObject.HasKeywordString("magicdisallowenchanting") && iIsInList(akBaseObject,HeadgearIgnoreList) < 0
 EndFunction
 
+Function EquipHeadgears()
+	Int i = ItemList.Length
+	While i > 0
+		i -= 1
+		If ItemList[i] 
+			If MySelf.GetItemCount(ItemList[i] As Armor) > 0
+				If PlayerScript.bSKSE
+					MySelf.EquipItemEx(ItemList[i])
+				Else
+					MySelf.EquipItem(ItemList[i], abSilent = True)
+				EndIf
+				Utility.Wait(0.2)
+			Else
+				ItemList[i] = None
+			EndIf
+		EndIf
+	EndWhile
+EndFunction
+
+Function UnequipHeadgears()
+	Int i = ItemList.Length
+	While i > 0
+		i -= 1
+		If ItemList[i]
+			MySelf.UnequipItem(ItemList[i], abSilent = True)
+			Utility.Wait(0.2)
+		EndIf
+	EndWhile
+EndFunction
+
 Function RegisterHeadgears(Actor akActor)
 	If akActor As Actor
 		Form akArmor
@@ -342,5 +324,6 @@ EndFunction
 
 Bool Function bIsIncluded(Actor akActor)
 Return (!sauhFollowersExclusion.GetValue() || !akActor.IsPlayerTeammate()) && \
+(!sauhGuardsExclusion.GetValue() || !akActor.IsGuard()) && \
 (!sauhEnemiesExclusion.GetValue() || (!akActor.IsHostileToActor(PlayerRef) && (akActor.GetFactionReaction(PlayerRef) != 1)))
 EndFunction

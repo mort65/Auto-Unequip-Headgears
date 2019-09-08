@@ -11,12 +11,22 @@ Spell Property NpcCloakAbility Auto
 GlobalVariable Property sauhState Auto
 GlobalVariable Property sauhNPCEffectState Auto
 GlobalVariable Property sauhNPCEffectMethod Auto
+GlobalVariable Property sauhLocsExclusion Auto
+GlobalVariable Property sauhLocsInclusion Auto
 GlobalVariable Property sauhVersion Auto
 Bool Property bSKSE Auto Hidden
 Form[] Property ItemList Auto Hidden
+FormList property CityLocations auto
 Int[] Property BlackList Auto Hidden
 Int[] Property WhiteList Auto Hidden
+GlobalVariable Property sauhCurrentLocState Auto
+GlobalVariable Property sauhCurrentLocExcluded Auto
+GlobalVariable Property sauhCurrentLocIncluded Auto
+GlobalVariable Property sauhFollowersExclusion Auto
 Race property DLC1VampireBeastRace Auto Hidden
+Location Property DLC1VampireCastleLocation Auto Hidden
+Location Property DLC1HunterHQLocation Auto Hidden
+Location Property DLC2RavenRockLocation Auto Hidden
 
 Event OnInit()
 	ItemList = New Form[20]
@@ -66,6 +76,9 @@ EndEvent
 Event OnPlayerLoadGame()
 	bSKSE = bCheckSKSE()
 	DLC1VampireBeastRace = Game.GetFormFromFile(0x283a, "Dawnguard.esm") as Race
+	DLC1HunterHQLocation = Game.GetFormFromFile(0x4c1f, "Dawnguard.esm") as Location
+	DLC1VampireCastleLocation = Game.GetFormFromFile(0x4c20, "Dawnguard.esm") as Location
+	DLC2RavenRockLocation = Game.GetFormFromFile(0x143b9, "Dragonborn.esm") as Location
 	If sauhVersion.GetValue() < getCurrentVersion()
 		Update()
 	EndIf
@@ -75,7 +88,6 @@ EndEvent
 
 Event OnUpdate()
 	If sauhNPCEffectState.GetValue() == 1
-		;Debug.Trace(Self + " detecting followers")
 		FollowerDetector.Start()
 		Utility.Wait(1.0)
 		FollowerDetector.Stop()
@@ -86,20 +98,33 @@ Event OnUpdate()
 		EndWhile
 		RegisterForSingleUpdate(4.0)
 	ElseIf sauhNPCEffectState.GetValue() == 2
-		;Debug.Trace(Self + " detecting NPCs")
-		If sauhNPCEffectMethod.GetValue()
-			NPCDetector.Start()
-			Utility.Wait(1.0)
-			NPCDetector.Stop()
-			Int i = 0
-			While !NPCDetector.IsStopped() && i < 50
-				Utility.Wait(0.1)
-				i += 1
-			EndWhile
+		If sauhCurrentLocState.GetValueInt()
+			If sauhNPCEffectMethod.GetValue()
+				NPCDetector.Start()
+				Utility.Wait(1.0)
+				NPCDetector.Stop()
+				Int i = 0
+				While !NPCDetector.IsStopped() && i < 50
+					Utility.Wait(0.1)
+					i += 1
+				EndWhile
+			Else
+				PlayerRef.AddSpell(NpcCloakAbility,False)
+				Utility.Wait(1.0)
+				PlayerRef.RemoveSpell(NpcCloakAbility)
+			EndIf
 		Else
-			PlayerRef.AddSpell(NpcCloakAbility,False)
-			Utility.Wait(1.0)
-			PlayerRef.RemoveSpell(NpcCloakAbility)
+			SendModEvent("AuhOtherNpcEffectStop")
+			If !sauhFollowersExclusion.GetValue()
+				FollowerDetector.Start()
+				Utility.Wait(1.0)
+				FollowerDetector.Stop()
+				Int i = 0
+				While !FollowerDetector.IsStopped() && i < 50
+					Utility.Wait(0.1)
+					i += 1
+				EndWhile
+			EndIf
 		EndIf
 		RegisterForSingleUpdate(4.0)
 	EndIf
@@ -112,6 +137,18 @@ Event OnRaceSwitchComplete()
 		GoToState("Resetting")
 	EndIf
 EndEvent
+
+Event OnLocationChange(Location akOldLoc, Location akNewLoc)
+	If sauhNPCEffectState.GetValue() == 2
+		UpdateLocState(akNewLoc)
+	EndIf
+EndEvent
+
+Function updateLocState(Location akLoc)
+	sauhCurrentLocIncluded.SetValueInt(bIsLocIncluded(akLoc) As Int)
+	sauhCurrentLocExcluded.SetValueInt(bIsCurLocExcluded() As Int)
+	sauhCurrentLocState.SetValue((sauhCurrentLocIncluded.GetValue() && !sauhCurrentLocExcluded.GetValue()) As Int)
+EndFunction
 
 Event OnAnimationEvent(ObjectReference akSource, String asEventName)
 	If akSource == PlayerRef
@@ -327,10 +364,53 @@ Float Function getBaseVersion()
 EndFunction
 
 Float Function getCurrentVersion()
-	Return getBaseVersion() + 0.02
+	Return getBaseVersion() + 0.07
 EndFunction
 
 Function Update()
 	sauhVersion.SetValue(getCurrentVersion())
 	Debug.Trace("Auto Unequip Headgears updated to version " + getCurrentVersion())
+EndFunction
+
+Bool Function bIsLocIncluded(Location akLoc)
+	Int iInclude = sauhLocsInclusion.GetValueInt()
+	If iInclude
+		Location CurrLoc = PlayerRef.GetCurrentLocation()
+		If CurrLoc
+			If iInclude == 2
+				 If CurrLoc.HasKeyWordString("LocTypeHouse") || \
+				 CurrLoc.HasKeyWordString("LocTypeDwelling") || \
+				 CurrLoc.HasKeyWordString("LocTypeHabitation")
+					Return True
+				EndIf
+			EndIf
+			If DLC1VampireCastleLocation && ((CurrLoc == DLC1VampireCastleLocation) || CurrLoc.IsChild(DLC1VampireCastleLocation))
+				Return True
+			ElseIf DLC1HunterHQLocation && ((CurrLoc == DLC1HunterHQLocation) || CurrLoc.IsChild(DLC1HunterHQLocation))
+				Return True
+			ElseIf DLC2RavenRockLocation && ((CurrLoc == DLC2RavenRockLocation) || CurrLoc.IsChild(DLC2RavenRockLocation))
+				Return True
+			ElseIf  CityLocations.HasForm(CurrLoc) || CurrLoc.HasKeyWordString("LocTypeCity") || CurrLoc.HasKeyWordString("LocTypeTown")
+				Return True
+			Else
+				Int i = CityLocations.GetSize()
+				While i > 0
+					i -= 1
+					If CurrLoc.IsChild(CityLocations.GetAt(i) As Location)
+						Return True
+					EndIf
+				EndWhile
+			EndIf
+		EndIf
+		Return False
+	EndIf
+	Return True
+EndFunction
+
+Bool Function bIsCurLocExcluded()
+	Int iExclude = sauhLocsExclusion.GetValueInt()
+	If iExclude
+		Return PlayerRef.IsInInterior() == (iExclude - 1) As Bool
+	EndIf
+	Return False
 EndFunction
