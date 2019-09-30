@@ -43,7 +43,9 @@ Event OnEffectStart(Actor akTarget, Actor akCaster)
 EndEvent
 
 Event OnEffectFinish(Actor akTarget, Actor akCaster)
-	GoToState("Equipping")
+	If akTarget && !akTarget.IsDead()
+		GoToState("Equipping")
+	EndIf
 	GoToState("Stopped")
 EndEvent
 

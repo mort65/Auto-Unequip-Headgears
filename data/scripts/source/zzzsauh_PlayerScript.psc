@@ -364,7 +364,7 @@ Float Function getBaseVersion()
 EndFunction
 
 Float Function getCurrentVersion()
-	Return getBaseVersion() + 0.07
+	Return getBaseVersion() + 0.08
 EndFunction
 
 Function Update()
