@@ -1,6 +1,7 @@
 ﻿# Auto-Unequip-Headgears
 Game: Skyrim 
 Mod Name: Auto Unequip Headgears Author(s): Mort65
+
 Download Link: https://www.dropbox.com/sh/4wntsk6xv7qv1mn/AADccqxQ1xr714mIywd-WT_Wa?dl=0
 
 Description:
